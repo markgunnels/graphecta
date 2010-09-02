@@ -8,11 +8,11 @@
 (def *SOCIALGRAPH-OPTIONS* "edo=true&edi=true&fme=true")
 (def *TWITTER-BASE-URL* "http://twitter.com/")
 
-(defn parse-raw-response
+(defn- parse-raw-response
   [raw-response]
   (json/decode-from-str (:body raw-response)))
 
-(defn extract-twitter-graph
+(defn- extract-twitter-graph
   [twitter-profile-url social-graph]
   ((keyword twitter-profile-url) (:nodes social-graph)))
 
@@ -34,8 +34,3 @@
 (defn nodes-referenced
   [twitter-graph]
   (element-extractor twitter-graph :nodes_referenced))
-
-;(:http://twitter.com/markgunnels (:nodes raw-graph))
-;(:nodes_referenced (:http://twitter.com/markgunnels (:nodes raw-graph)))
-;(:nodes_referenced_by (:http://twitter.com/markgunnels (:nodes raw-graph)))
-
