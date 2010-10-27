@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!-- Created by htmlize-1.36 in css mode. -->
+<html>
+  <head>
+    <title>core.clj</title>
+    <style type="text/css">
+    <!--
+      body {
+        color: #e5e5e5;
+        background-color: #000000;
+      }
+      .builtin {
+        /* font-lock-builtin-face */
+        color: #00cdcd;
+      }
+      .function-name {
+        /* font-lock-function-name-face */
+        color: #00cdcd;
+      }
+      .keyword {
+        /* font-lock-keyword-face */
+        color: #00cdcd;
+      }
+      .string {
+        /* font-lock-string-face */
+        color: #cdcd00;
+      }
+
+      a {
+        color: inherit;
+        background-color: inherit;
+        font: inherit;
+        text-decoration: inherit;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    -->
+    </style>
+  </head>
+  <body>
+    <pre>
+(<span class="keyword">ns</span> graphecta.core
+  (<span class="builtin">:require</span> [clojure.contrib.string <span class="builtin">:as</span> string]
+            [clj-http.client <span class="builtin">:as</span> client]
+            (org.danlarkin [json <span class="builtin">:as</span> json])))
+
+(<span class="keyword">def</span> <span class="function-name">*SOCIALGRAPH-BASE-URL*</span> <span class="string">"http://socialgraph.apis.google.com/"</span>)
+(<span class="keyword">def</span> <span class="function-name">*SOCIALGRAPH-LOOKUP-URL*</span> (<span class="builtin">str</span> *SOCIALGRAPH-BASE-URL* <span class="string">"lookup"</span>))
+(<span class="keyword">def</span> <span class="function-name">*SOCIALGRAPH-OPTIONS*</span> <span class="string">"edo=true&amp;edi=true&amp;fme=true"</span>)
+(<span class="keyword">def</span> <span class="function-name">*TWITTER-BASE-URL*</span> <span class="string">"http://twitter.com/"</span>)
+
+(<span class="keyword">defn-</span> <span class="function-name">parse-raw-response</span>
+  [raw-response]
+  (json/decode-from-str (<span class="builtin">:body</span> raw-response)))
+
+(<span class="keyword">defn-</span> <span class="function-name">extract-twitter-graph</span>
+  [twitter-profile-url social-graph]
+  ((<span class="builtin">keyword</span> twitter-profile-url) (<span class="builtin">:nodes</span> social-graph)))
+
+(<span class="keyword">defn</span> <span class="function-name">graph-from-twitter</span>
+  [twitter-username]
+  (<span class="keyword">let</span> [twitter-profile-url (<span class="builtin">str</span> *TWITTER-BASE-URL* twitter-username)
+        raw-response (client/get (<span class="builtin">str</span> *SOCIALGRAPH-LOOKUP-URL* <span class="string">"?"</span> *SOCIALGRAPH-OPTIONS* <span class="string">"&amp;q="</span> twitter-profile-url))
+        social-graph (parse-raw-response raw-response)]
+    (extract-twitter-graph twitter-profile-url social-graph)))
+
+(<span class="keyword">defn-</span> <span class="function-name">element-extractor</span>
+  [twitter-graph key]
+  (<span class="builtin">map</span> string/as-str (<span class="builtin">keys</span> (<span class="builtin">key</span> twitter-graph))))
+
+(<span class="keyword">defn</span> <span class="function-name">nodes-referenced-by</span>
+  [twitter-graph]
+  (element-extractor twitter-graph <span class="builtin">:nodes_referenced_by</span>))
+
+(<span class="keyword">defn</span> <span class="function-name">nodes-referenced</span>
+  [twitter-graph]
+  (element-extractor twitter-graph <span class="builtin">:nodes_referenced</span>))
+</pre>
+  </body>
+</html>
