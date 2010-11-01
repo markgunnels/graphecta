@@ -4,7 +4,8 @@
             (org.danlarkin [json :as json])
             [clojure.contrib.seq-utils :as seq-utils]
             [clojure.set :as set]
-            [work.core :as work]))
+            [work.core :as work]
+            [clojure.contrib.duck-streams :as duck-streams]))
 
 (def *SOCIALGRAPH-BASE-URL* "http://socialgraph.apis.google.com/")
 (def *SOCIALGRAPH-LOOKUP-URL* (str *SOCIALGRAPH-BASE-URL* "lookup"))
@@ -12,11 +13,12 @@
 (def *TWITTER-BASE-URL* "http://twitter.com/")
 
 (def *social-graph* (ref #{}))
+(def *social-profiles* (ref #{}))
 
-(defn add-edge-to-social-graph
-  [edge]
+(defn add-profile-to-social-profiles
+  [profile]
   (dosync
-   (alter *social-graph*  conj edge)))
+   (alter *social-profiles*  conj profile)))
 
 (defn add-nodes-to-social-graph
   [nodes]
@@ -87,6 +89,12 @@
       (build-social-graph-from-twitter-user-name)
       (add-nodes-to-social-graph)))
 
+(defn build-and-add-social-profiles-from-twitter-user-name
+  [twitter-user-name]
+  (-> twitter-user-name
+      (build-social-profile-from-twitter)
+      (add-profile-to-social-profiles)))
+
 (defn build-candidates-from-profile
   [{:keys [follows followers user-name]}]
   (set/union (set follows)
@@ -98,3 +106,32 @@
         candidates (build-candidates-from-profile patient-zero-profile)]
     (work/map-work build-and-add-social-graph-from-twitter-user-name (conj candidates twitter-user-name) 2)))
 
+(defn populate-social-profiles-from-twitter-user-name
+  [twitter-user-name]
+  (let [patient-zero-profile (build-social-profile-from-twitter twitter-user-name)
+        candidates (build-candidates-from-profile patient-zero-profile)]
+    (work/map-work build-and-add-social-profiles-from-twitter-user-name (conj candidates twitter-user-name) 2)))
+
+
+
+;;move these to a new namespace
+(defn create-count-datapoint
+  [social-profile]
+  {:user-name (:user-name social-profile)
+   :followers-count (count (:followers social-profile))
+   :follows-count (count (:follows social-profile))})
+
+(defn create-count-dataset
+  [social-profiles]
+  (map #(create-count-datapoint %) social-profiles))
+
+(defn serialize
+  "Print a data structure to a file so that we may read it in later."
+  [data-structure #^String filename]
+  (duck-streams/with-out-writer
+    (java.io.File. filename)
+    (binding [*print-dup* true] (prn data-structure))))
+
+(defn deserialize [filename]
+  (with-open [r (java.io.PushbackReader. (java.io.FileReader. filename))]
+    (read r)))
